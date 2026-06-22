@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   X,
+  FileText,
   History,
   Activity,
   ChevronRight
@@ -33,11 +34,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const navItems = [
     { name: 'Overview', icon: LayoutDashboard, path: '/', roles: ['Director', 'Doctor', 'Nurse', 'Technologist', 'Finance'] },
     { name: 'Registration', icon: Users, path: '/registration', roles: ['Director', 'Nurse', 'Finance'] },
+    { name: 'Triage', icon: Stethoscope, path: '/triage', roles: ['Director', 'Nurse'] },
+    { name: 'Consultation', icon: FileText, path: '/consultation', roles: ['Director', 'Doctor'] },
     { name: 'Admission', icon: Bed, path: '/admission', roles: ['Director', 'Doctor', 'Nurse'] },
     { name: 'Ward Management', icon: Activity, path: '/ward', roles: ['Director', 'Doctor', 'Nurse'] },
     { name: 'Investigations', icon: FlaskConical, path: '/investigations', roles: ['Director', 'Doctor', 'Technologist'] },
     { name: 'Pharmacy', icon: Pill, path: '/pharmacy', roles: ['Director', 'Doctor', 'Nurse', 'Finance'] },
     { name: 'Finance', icon: CircleDollarSign, path: '/finance', roles: ['Director', 'Finance'] },
+    { name: 'Discharge', icon: LogOut, path: '/discharge', roles: ['Director', 'Doctor', 'Nurse', 'Finance'] },
     { name: 'Mortuary', icon: Activity, path: '/mortuary', roles: ['Director', 'Doctor', 'Nurse'] },
     { name: 'Audit Log', icon: History, path: '/audit', roles: ['Director'] },
   ];

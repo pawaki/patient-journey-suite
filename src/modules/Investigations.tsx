@@ -32,7 +32,7 @@ const Investigations: React.FC = () => {
     addBilling({
       patientId: order.patientId,
       description: `${order.type} Test: ${order.testName}`,
-      amount: order.type === 'Lab' ? 50 : 150,
+      amount: order.type === 'Lab' ? 1500 : 4500,
       category: 'Diagnostics'
     });
 

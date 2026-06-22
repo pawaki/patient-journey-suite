@@ -43,7 +43,7 @@ const Pharmacy: React.FC = () => {
     addBilling({
       patientId: pId,
       description: `Medication: ${medication}`,
-      amount: 25,
+      amount: 450,
       category: 'Pharmacy'
     });
 

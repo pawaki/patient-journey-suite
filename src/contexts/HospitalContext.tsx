@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Patient, Ward, Bed, Vitals, Note, Investigation, Prescription, BillingItem, AuditLog } from '../types';
+import { Patient, Ward, Bed, Vitals, Note, Investigation, Prescription, BillingItem, AuditLog, Budget, TriageLevel, Payment } from '../types';
 import { useAuth } from './AuthContext';
 
 interface HospitalContextType {
@@ -10,9 +10,12 @@ interface HospitalContextType {
   investigations: Investigation[];
   prescriptions: Prescription[];
   billing: BillingItem[];
+  budgets: Budget[];
   auditLogs: AuditLog[];
+  payments: Payment[];
   addPatient: (patient: Omit<Patient, 'id' | 'hospitalId'>) => void;
   admitPatient: (patientId: string, wardId: string, bedId: string, diagnosis: string) => void;
+  addTriage: (patientId: string, level: TriageLevel, vitals: Omit<Vitals, 'id' | 'timestamp' | 'recordedBy' | 'isFlagged'>) => void;
   addVitals: (vitals: Omit<Vitals, 'id' | 'timestamp' | 'recordedBy'>) => void;
   addNote: (note: Omit<Note, 'id' | 'timestamp' | 'author'>) => void;
   addInvestigation: (inv: Omit<Investigation, 'id' | 'orderDate' | 'status' | 'orderedBy'>) => void;
@@ -20,6 +23,8 @@ interface HospitalContextType {
   addPrescription: (presc: Omit<Prescription, 'id' | 'startDate' | 'status' | 'prescribedBy'>) => void;
   dispensePrescription: (id: string) => void;
   addBilling: (item: Omit<BillingItem, 'id' | 'date'>) => void;
+  addPayment: (payment: Omit<Payment, 'id' | 'date'>) => void;
+  setBudget: (category: string, amount: number, period: string) => void;
   logAction: (action: string, details?: string) => void;
   dischargePatient: (patientId: string) => void;
 }
@@ -52,7 +57,19 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [investigations, setInvestigations] = useState<Investigation[]>(() => JSON.parse(localStorage.getItem('hms_investigations') || '[]'));
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(() => JSON.parse(localStorage.getItem('hms_prescriptions') || '[]'));
   const [billing, setBilling] = useState<BillingItem[]>(() => JSON.parse(localStorage.getItem('hms_billing') || '[]'));
+  const [budgets, setBudgets] = useState<Budget[]>(() => {
+    const saved = localStorage.getItem('hms_budgets');
+    if (saved) return JSON.parse(saved);
+    return [
+      { id: 'b1', category: 'Clinical', amount: 500000, period: 'Monthly', actual: 0 },
+      { id: 'b2', category: 'Laboratory', amount: 800000, period: 'Monthly', actual: 0 },
+      { id: 'b3', category: 'Radiology', amount: 1200000, period: 'Monthly', actual: 0 },
+      { id: 'b4', category: 'Inpatient', amount: 2000000, period: 'Monthly', actual: 0 },
+      { id: 'b5', category: 'Pharmacy', amount: 1500000, period: 'Monthly', actual: 0 },
+    ];
+  });
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => JSON.parse(localStorage.getItem('hms_audit') || '[]'));
+  const [payments, setPayments] = useState<Payment[]>(() => JSON.parse(localStorage.getItem('hms_payments') || '[]'));
 
   useEffect(() => {
     localStorage.setItem('hms_patients', JSON.stringify(patients));
@@ -62,8 +79,10 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.setItem('hms_investigations', JSON.stringify(investigations));
     localStorage.setItem('hms_prescriptions', JSON.stringify(prescriptions));
     localStorage.setItem('hms_billing', JSON.stringify(billing));
+    localStorage.setItem('hms_budgets', JSON.stringify(budgets));
     localStorage.setItem('hms_audit', JSON.stringify(auditLogs));
-  }, [patients, wards, vitals, notes, investigations, prescriptions, billing, auditLogs]);
+    localStorage.setItem('hms_payments', JSON.stringify(payments));
+  }, [patients, wards, vitals, notes, investigations, prescriptions, billing, budgets, auditLogs, payments]);
 
   const logAction = (action: string, details?: string) => {
     if (!user) return;
@@ -87,6 +106,20 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
     setPatients(prev => [...prev, newPatient]);
     logAction('Patient Registered', `Registered patient: ${newPatient.name}`);
+  };
+
+  const addTriage = (patientId: string, level: TriageLevel, v: Omit<Vitals, 'id' | 'timestamp' | 'recordedBy' | 'isFlagged'>) => {
+    const isFlagged = v.temp > 38 || v.oxygenSat < 94 || v.heartRate > 100 || v.heartRate < 60;
+    const newVitals: Vitals = {
+      ...v,
+      id: Math.random().toString(36).substr(2, 9),
+      timestamp: new Date().toISOString(),
+      recordedBy: user?.name || 'System',
+      isFlagged
+    };
+    setVitals(prev => [newVitals, ...prev]);
+    setPatients(prev => prev.map(p => p.id === patientId ? { ...p, status: 'Triaged', triageLevel: level, triageDate: new Date().toISOString() } : p));
+    logAction('Patient Triaged', `Triaged patient ID: ${patientId} as ${level}`);
   };
 
   const admitPatient = (patientId: string, wardId: string, bedId: string, diagnosis: string) => {
@@ -179,6 +212,30 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setBilling(prev => [...prev, newItem]);
   };
 
+  const addPayment = (p: Omit<Payment, 'id' | 'date'>) => {
+    const newPayment: Payment = {
+      ...p,
+      id: Math.random().toString(36).substr(2, 9),
+      date: new Date().toISOString()
+    };
+    setPayments(prev => [...prev, newPayment]);
+    logAction('Payment Received', `Payment of KES ${p.amount.toLocaleString()} from patient ID: ${p.patientId}`);
+  };
+
+  const setBudget = (category: string, amount: number, period: string) => {
+    setBudgets(prev => {
+      const existing = prev.find(b => b.category === category && b.period === period);
+      if (existing) {
+        return prev.map(b => b.id === existing.id ? { ...b, amount } : b);
+      }
+      return [...prev, {
+        id: Math.random().toString(36).substr(2, 9),
+        category, amount, period, actual: 0
+      }];
+    });
+    logAction('Budget Updated', `Set budget for ${category}: KES ${amount.toLocaleString()}`);
+  };
+
   const dischargePatient = (patientId: string) => {
     const patient = patients.find(p => p.id === patientId);
     if (!patient) return;
@@ -197,9 +254,9 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   return (
     <HospitalContext.Provider value={{ 
-      patients, wards, vitals, notes, investigations, prescriptions, billing, auditLogs,
-      addPatient, admitPatient, addVitals, addNote, addInvestigation, updateInvestigation,
-      addPrescription, dispensePrescription, addBilling, logAction, dischargePatient
+      patients, wards, vitals, notes, investigations, prescriptions, billing, budgets, auditLogs,
+      payments, addPatient, admitPatient, addTriage, addVitals, addNote, addInvestigation, updateInvestigation,
+      addPrescription, dispensePrescription, addBilling, addPayment, setBudget, logAction, dischargePatient
     }}>
       {children}
     </HospitalContext.Provider>

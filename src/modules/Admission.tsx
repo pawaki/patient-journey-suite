@@ -17,7 +17,7 @@ const Admission: React.FC = () => {
   const [selectedBedId, setSelectedBedId] = useState('');
   const [diagnosis, setDiagnosis] = useState('');
 
-  const registeredPatients = patients.filter(p => p.status === 'Registered');
+  const eligibilePatients = patients.filter(p => p.status === 'Registered' || p.status === 'Triaged');
   const selectedWard = wards.find(w => w.id === selectedWardId);
   const availableBeds = selectedWard?.beds.filter(b => b.status === 'Available') || [];
 
@@ -54,10 +54,10 @@ const Admission: React.FC = () => {
                 <Label>Patient</Label>
                 <Select onValueChange={setSelectedPatientId} value={selectedPatientId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select registered patient" />
+                    <SelectValue placeholder="Select registered/triaged patient" />
                   </SelectTrigger>
                   <SelectContent>
-                    {registeredPatients.map(p => (
+                    {eligibilePatients.map(p => (
                       <SelectItem key={p.id} value={p.id}>{p.name} ({p.hospitalId})</SelectItem>
                     ))}
                   </SelectContent>

@@ -6,6 +6,8 @@ export interface User {
   role: Role;
 }
 
+export type TriageLevel = 'P1 - Emergency' | 'P2 - Urgent' | 'P3 - Non-Urgent' | 'P4 - Routine';
+
 export interface Patient {
   id: string;
   hospitalId: string;
@@ -18,7 +20,9 @@ export interface Patient {
   isChild: boolean;
   demographics: any;
   medicalHistory: string[];
-  status: 'Registered' | 'Admitted' | 'Discharged' | 'Deceased';
+  status: 'Registered' | 'Triaged' | 'Admitted' | 'Discharged' | 'Deceased';
+  triageLevel?: TriageLevel;
+  triageDate?: string;
   currentWardId?: string;
   currentBedId?: string;
   admittingDiagnosis?: string;
@@ -95,6 +99,23 @@ export interface BillingItem {
   amount: number;
   date: string;
   category: string; // From Chart of Accounts
+}
+
+export interface Budget {
+  id: string;
+  category: string;
+  amount: number;
+  period: string; // e.g., '2024-Q1' or '2024-05'
+  actual: number;
+}
+
+export interface Payment {
+  id: string;
+  patientId: string;
+  amount: number;
+  method: 'Cash' | 'Insurance' | 'Mobile Money';
+  date: string;
+  reference?: string;
 }
 
 export interface AuditLog {
